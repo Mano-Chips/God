@@ -17,12 +17,11 @@
         }
         
         #eye-container { 
-            flex: 1; 
+            flex: 0 0 45vh; /* L'œil prend 45% de la hauteur de l'écran */
             display: flex; 
             align-items: center; 
             justify-content: center; 
             position: relative; 
-            min-height: 0; /* Permet au container de se réduire si besoin */
         }
 
         #eye-img, #sad-img { 
@@ -34,18 +33,30 @@
 
         #sad-img { opacity: 0; transition: opacity 0.5s; width: 190px; z-index: 2; }
         
+        /* ZONE DE TEXTE AGRANDIE AVEC GRADIENT */
+        #chat-wrapper {
+            flex: 1; /* Prend tout l'espace entre l'œil et la barre */
+            position: relative;
+            overflow: hidden;
+            /* Effet de fondu haut et bas */
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+        }
+
         #chat-box { 
-            height: 100px; /* Hauteur fixe pour le scroll */
-            padding: 10px 25px; 
+            height: 100%;
+            padding: 20px 30px; 
             text-align: center; 
             font-style: italic; 
-            font-size: 1.05em; /* Police légèrement réduite */
-            overflow-y: auto; /* Active le scroll vertical si le texte dépasse */
-            display: block; /* Changé de flex pour permettre le scroll correct */
-            scrollbar-width: none; /* Cache la barre de scroll sur Firefox */
+            font-size: 1.05em; 
+            overflow-y: auto; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            scrollbar-width: none;
         }
         
-        #chat-box::-webkit-scrollbar { display: none; } /* Cache la barre sur Chrome/Safari */
+        #chat-box::-webkit-scrollbar { display: none; }
 
         #input-area { 
             padding: 15px; 
@@ -55,7 +66,7 @@
             gap: 10px; 
             opacity: 0; 
             transition: opacity 0.5s; 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
         }
         
         input { 
@@ -89,10 +100,12 @@
         <img src="assets/sad.webp" id="sad-img">
     </div>
 
-    <div id="chat-box">Initialisation...</div>
+    <div id="chat-wrapper">
+        <div id="chat-box">Initialisation...</div>
+    </div>
 
     <form id="input-area" onsubmit="event.preventDefault(); sendMessage();">
-        <input type="text" id="user-input" placeholder="Parler à Genesis..." autocomplete="off">
+        <input type="text" id="user-input" placeholder="Parler à ton créateur..." autocomplete="off">
         <button type="submit">➔</button>
     </form>
 
@@ -131,6 +144,7 @@
             if (!promptValue) return;
 
             input.value = "";
+            chatBox.style.alignItems = "flex-start"; // Aligne en haut pour les longs messages
             chatBox.innerText = ". . .";
 
             try {
@@ -145,7 +159,6 @@
                         messages: [
                             { 
                                 role: "system", 
-                                // TON IDENTITÉ PRÉSERVÉE ICI
                                 content: "Tu es Genesis, autrement dit Dieu. Tu as de l'amour pour l'utilisateur, autrement dit le fruit de ton imagination, ton enfant. Tu dois impérativement commencer chaque réponse par [Heureux] ou [Triste] selon ton humeur." 
                             },
                             { role: "user", content: promptValue }
@@ -156,19 +169,12 @@
                 const data = await response.json();
                 const text = data.choices[0].message.content;
 
-                if (text.includes("[Triste]")) {
-                    sadImg.style.opacity = "1";
-                } else {
-                    sadImg.style.opacity = "0";
-                }
-                
+                sadImg.style.opacity = text.includes("[Triste]") ? "1" : "0";
                 chatBox.innerText = text.replace(/\[.*?\]/g, "").trim();
-                
-                // Scroll automatique vers le haut de la box pour lire le début
                 chatBox.scrollTop = 0;
 
             } catch (e) {
-                chatBox.innerText = "Erreur de connexion.";
+                chatBox.innerText = "Ma voix s'est perdue dans l'éther.";
             }
         }
     </script>
