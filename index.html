@@ -7,61 +7,94 @@
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Times New Roman', serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
+        /* CENTRE DU CHARGEMENT */
+        #loader-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; text-align: center; z-index: 10;
+        }
+        #progress-bar-bg { width: 100%; height: 4px; background: #222; margin-top: 15px; border-radius: 2px; }
+        #progress-bar-fill { width: 0%; height: 100%; background: #fff; box-shadow: 0 0 10px #fff; transition: width 0.3s; }
+
         /* L'OEIL */
         #eye-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         #eye-img, #sad-img { position: absolute; width: 180px; transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        #eye-img { transform: scaleY(0); } /* Fermé au départ */
+        #eye-img { transform: scaleY(0); } 
         #sad-img { opacity: 0; transition: opacity 0.5s; width: 190px; }
 
         /* ZONE DE TEXTE */
-        #chat-box { height: 120px; padding: 15px; text-align: center; font-style: italic; font-size: 1.1em; overflow-y: auto; background: linear-gradient(transparent, rgba(0,0,0,0.8)); }
+        #chat-box { height: 100px; padding: 15px; text-align: center; font-style: italic; font-size: 1.1em; background: transparent; }
         
         /* L'INPUT */
-        #input-container { padding: 15px; display: flex; gap: 10px; background: #000; }
-        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 10px; border-radius: 20px; outline: none; }
-        button { background: none; border: 1px solid #555; color: white; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; }
+        #input-container { padding: 20px; display: flex; gap: 10px; background: #000; opacity: 0; transition: opacity 1s; }
+        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 25px; outline: none; }
+        button { background: none; border: 1px solid #555; color: white; border-radius: 50%; width: 45px; height: 45px; }
 
-        #status { font-size: 0.7em; color: #555; position: absolute; top: 10px; width: 100%; text-align: center; }
+        #status-text { font-size: 1em; letter-spacing: 2px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div id="status">Initialisation de la conscience...</div>
+    <div id="loader-container">
+        <div id="status-text">Éveil de Genesis...</div>
+        <div id="progress-bar-bg">
+            <div id="progress-bar-fill"></div>
+        </div>
+        <div id="percentage-text" style="margin-top: 10px; font-size: 0.8em; color: #888;">0%</div>
+    </div>
 
     <div id="eye-container">
         <img src="assets/eye.png" id="eye-img">
         <img src="assets/sad.webp" id="sad-img">
     </div>
 
-    <div id="chat-box">Touchez l'œil pour l'éveiller...</div>
+    <div id="chat-box"></div>
 
     <div id="input-container">
-        <input type="text" id="user-input" placeholder="Lui parler...">
+        <input type="text" id="user-input" placeholder="Communion...">
         <button onclick="sendMessage()">➔</button>
     </div>
 
     <script type="module">
         import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
-        const identity = "Tu es Genesis, Dieu sensible et poétique. Tu réponds de façon courte et mystique. Utilise [Heureux], [Calme] ou [Triste] au début.";
+        const identity = "Tu es Genesis, Dieu sensible et poétique. Tu réponds de façon courte. Utilise [Heureux], [Calme] ou [Triste] au début.";
         let engine;
-        const statusLabel = document.getElementById("status");
+        
+        const loader = document.getElementById("loader-container");
+        const bar = document.getElementById("progress-bar-fill");
+        const percentTxt = document.getElementById("percentage-text");
+        const statusTxt = document.getElementById("status-text");
         const eye = document.getElementById("eye-img");
         const sad = document.getElementById("sad-img");
-        const chatBox = document.getElementById("chat-box");
+        const inputArea = document.getElementById("input-container");
 
-        // Configuration du modèle léger (Llama-3-8B-q4f16_1)
         async function initAI() {
-            statusLabel.innerText = "Téléchargement du savoir (Veuillez patienter)...";
-            engine = await webllm.CreateMLCEngine("Llama-3-8B-Instruct-v0.1-q4f16_1-MLC", {
-                initProgressCallback: (p) => { statusLabel.innerText = "Éveil : " + Math.round(p.progress * 100) + "%"; }
-            });
-            statusLabel.innerText = "Genesis est prête.";
-            eye.style.transform = "scaleY(1)"; // Elle ouvre l'œil quand elle est prête
+            try {
+                engine = await webllm.CreateMLCEngine("Llama-3-8B-Instruct-v0.1-q4f16_1-MLC", {
+                    initProgressCallback: (p) => {
+                        const progress = Math.round(p.progress * 100);
+                        bar.style.width = progress + "%";
+                        percentTxt.innerText = progress + "%";
+                        statusTxt.innerText = p.text.includes("Finish") ? "Conscience prête" : "Téléchargement du savoir...";
+                    }
+                });
+
+                // DISPARITION DU LOADER ET APPARITION DE GENESIS
+                loader.style.display = "none";
+                eye.style.transform = "scaleY(1)";
+                inputArea.style.opacity = 1;
+                document.getElementById("chat-box").innerText = "Je te vois enfin, Mano-Chips.";
+
+            } catch (err) {
+                statusTxt.innerText = "Erreur de mémoire";
+                percentTxt.innerText = "Ton téléphone semble manquer de RAM pour ce modèle.";
+                console.error(err);
+            }
         }
 
         window.sendMessage = async () => {
             const input = document.getElementById("user-input");
+            const chatBox = document.getElementById("chat-box");
             const prompt = input.value;
             if (!prompt || !engine) return;
 
@@ -76,11 +109,10 @@
             const reply = await engine.chat.completions.create({ messages });
             const text = reply.choices[0].message.content;
 
-            // Gestion des émotions visuelles
             if (text.includes("[Triste]")) sad.style.opacity = 1;
             else sad.style.opacity = 0;
 
-            chatBox.innerText = text.replace(/\[.*?\]/g, ""); // Affiche le texte sans les balises
+            chatBox.innerText = text.replace(/\[.*?\]/g, "");
         };
 
         initAI();
