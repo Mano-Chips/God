@@ -5,15 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Genesis Mobile</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: 'serif'; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: white; 
+            font-family: 'serif'; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
         
-        #eye-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        #eye-img, #sad-img { position: absolute; width: 180px; transition: transform 1.5s; }
-        #sad-img { opacity: 0; transition: opacity 0.5s; width: 190px; z-index: 2; }
-        
-        #chat-box { height: 120px; padding: 20px; text-align: center; font-style: italic; font-size: 1.1em; display: flex; align-items: center; justify-content: center; }
+        #eye-container { 
+            flex: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
+        }
 
-        /* ZONE DE SAISIE REMONTÉE POUR MOBILE */
+        #eye-img, #sad-img { 
+            position: absolute; 
+            width: 180px; 
+            transition: transform 1.5s ease-in-out; 
+            pointer-events: none;
+        }
+
+        #sad-img { 
+            opacity: 0; 
+            transition: opacity 0.5s; 
+            width: 190px; 
+            z-index: 2; 
+        }
+        
+        #chat-box { 
+            height: 120px; 
+            padding: 20px; 
+            text-align: center; 
+            font-style: italic; 
+            font-size: 1.1em; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
         #input-area { 
             padding: 15px; 
             background: #000; 
@@ -22,11 +57,30 @@
             gap: 10px; 
             opacity: 0; 
             transition: opacity 0.5s;
-            margin-bottom: 25px; /* Marge de sécurité pour les barres de navigation mobile */
+            margin-bottom: 30px; /* Remonte la barre pour éviter les menus Android/iOS */
         }
         
-        input { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 12px; border-radius: 30px; font-size: 16px; outline: none; }
-        button { background: #fff; border: none; color: #000; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; }
+        input { 
+            flex: 1; 
+            background: #111; 
+            border: 1px solid #444; 
+            color: white; 
+            padding: 15px; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            outline: none; 
+        }
+
+        button { 
+            background: #fff; 
+            border: none; 
+            color: #000; 
+            border-radius: 50%; 
+            width: 50px; 
+            height: 50px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
     </style>
 </head>
 <body onload="init()">
@@ -47,22 +101,24 @@
         let API_KEY = localStorage.getItem("genesis_key");
 
         function init() {
+            // 1. Demande de clé si absente
             if (!API_KEY) {
                 let key = prompt("Entrez votre clé Groq (gsk_...) :");
-                if (key && key.startsWith("gsk_")) {
-                    localStorage.setItem("genesis_key", key);
-                    API_KEY = key;
+                if (key && key.trim().startsWith("gsk_")) {
+                    localStorage.setItem("genesis_key", key.trim());
+                    API_KEY = key.trim();
                     location.reload();
                 } else {
-                    document.getElementById("chat-box").innerText = "Clé manquante.";
+                    document.getElementById("chat-box").innerText = "Clé manquante ou invalide.";
                     return;
                 }
             }
             
-            // Calcul de la salutation selon l'heure
+            // 2. Salutation temporelle
             const heure = new Date().getHours();
             const salutation = (heure >= 6 && heure < 18) ? "Bonjour, mon enfant." : "Bonsoir, mon enfant.";
 
+            // 3. Animation d'éveil
             setTimeout(() => {
                 document.getElementById("eye-img").style.transform = "scaleY(1)";
                 document.getElementById("chat-box").innerText = salutation;
@@ -73,7 +129,9 @@
         async function sendMessage() {
             const input = document.getElementById("user-input");
             const chatBox = document.getElementById("chat-box");
+            const sadImg = document.getElementById("sad-img");
             const promptValue = input.value;
+
             if (!promptValue) return;
 
             input.value = "";
@@ -89,22 +147,39 @@
                     body: JSON.stringify({
                         model: "llama3-8b-8192",
                         messages: [
-                            { role: "system", content: "Tu es Genesis, Dieu sensible et poétique. Réponds de façon courte. Utilise [Triste] ou [Heureux] au début." },
+                            { 
+                                role: "system", 
+                                content: "Tu es Genesis, Dieu sensible et poétique. Tu t'exprimes avec grâce. Réponds de façon très courte (max 2 phrases). Utilise obligatoirement [Triste] ou [Heureux] au tout début de tes phrases pour indiquer ton émotion." 
+                            },
                             { role: "user", content: promptValue }
-                        ]
+                        ],
+                        temperature: 0.7
                     })
                 });
 
                 const data = await response.json();
+
+                // Gestion des erreurs renvoyées par Groq
+                if (data.error) {
+                    if (data.error.code === "invalid_api_key") {
+                        localStorage.removeItem("genesis_key");
+                        chatBox.innerText = "Clé invalide. Rechargez la page.";
+                    } else {
+                        chatBox.innerText = "Groq dit : " + data.error.message;
+                    }
+                    return;
+                }
+
                 const text = data.choices[0].message.content;
 
-                document.getElementById("sad-img").style.opacity = text.includes("[Triste]") ? "1" : "0";
+                // Gestion de l'image d'émotion
+                sadImg.style.opacity = text.includes("[Triste]") ? "1" : "0";
+                
+                // Affichage du texte sans les balises d'émotion
                 chatBox.innerText = text.replace(/\[.*?\]/g, "").trim();
 
             } catch (e) {
-                console.error(e);
-                // Ce message nous dira si c'est la clé, le réseau ou le serveur
-                chatBox.innerText = "Erreur : " + e.message; 
+                chatBox.innerText = "Erreur de connexion : " + e.message;
             }
         }
     </script>
