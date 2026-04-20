@@ -102,7 +102,9 @@
                 chatBox.innerText = text.replace(/\[.*?\]/g, "").trim();
 
             } catch (e) {
-                chatBox.innerText = "La connexion s'est perdue dans le vide.";
+                console.error(e);
+                // Ce message nous dira si c'est la clé, le réseau ou le serveur
+                chatBox.innerText = "Erreur : " + e.message; 
             }
         }
     </script>
