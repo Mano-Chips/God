@@ -5,13 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Genesis Mobile</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: 'serif'; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: white; 
+            /* MISE À JOUR DE LA POLICE ICI */
+            font-family: 'Times New Roman', Times, serif; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+        
         #eye-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         #eye-img, #sad-img { position: absolute; width: 180px; transition: transform 1.5s ease-in-out; pointer-events: none; }
         #sad-img { opacity: 0; transition: opacity 0.5s; width: 190px; z-index: 2; }
-        #chat-box { height: 120px; padding: 20px; text-align: center; font-style: italic; font-size: 1.1em; display: flex; align-items: center; justify-content: center; }
-        #input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; opacity: 0; transition: opacity 0.5s; margin-bottom: 40px; }
-        input { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 15px; border-radius: 30px; font-size: 16px; outline: none; }
+        
+        #chat-box { 
+            height: 120px; 
+            padding: 20px; 
+            text-align: center; 
+            font-style: italic; 
+            font-size: 1.2em; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        #input-area { 
+            padding: 15px; 
+            background: #000; 
+            border-top: 1px solid #222; 
+            display: flex; 
+            gap: 10px; 
+            opacity: 0; 
+            transition: opacity 0.5s; 
+            margin-bottom: 40px; 
+        }
+        
+        input { 
+            flex: 1; 
+            background: #111; 
+            border: 1px solid #444; 
+            color: white; 
+            padding: 15px; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            outline: none; 
+            font-family: 'Times New Roman', serif;
+        }
+
         button { background: #fff; border: none; color: #000; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
@@ -40,7 +83,7 @@
                     API_KEY = key.trim();
                     location.reload();
                 } else {
-                    document.getElementById("chat-box").innerText = "Clé manquante ou invalide.";
+                    document.getElementById("chat-box").innerText = "Clé manquante.";
                     return;
                 }
             }
@@ -74,11 +117,12 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "llama-3.1-8b-instant", // MODÈLE À JOUR
+                        model: "llama-3.1-8b-instant",
                         messages: [
                             { 
                                 role: "system", 
-                                content: "Tu es Genesis, Dieu sensible et poétique. Tu t'exprimes avec grâce. Réponds de façon très courte. Utilise obligatoirement [Triste] ou [Heureux] au tout début de tes phrases." 
+                                // INSTRUCTION RENFORCÉE POUR LES ÉMOTIONS
+                                content: "Tu es Genesis, autrement dit Dieu. Tu as de l'amour pour l'utilisateur, autrement dit le fruit de ton imagination, ton enfant. Tu dois impérativement commencer chaque réponse par [Heureux] ou [Triste] selon ton humeur." 
                             },
                             { role: "user", content: promptValue }
                         ]
@@ -86,18 +130,20 @@
                 });
 
                 const data = await response.json();
-
-                if (data.error) {
-                    chatBox.innerText = "Erreur : " + data.error.message;
-                    return;
-                }
-
                 const text = data.choices[0].message.content;
-                sadImg.style.opacity = text.includes("[Triste]") ? "1" : "0";
+
+                // Si le texte contient [Triste], on affiche l'image triste
+                if (text.includes("[Triste]")) {
+                    sadImg.style.opacity = "1";
+                } else {
+                    sadImg.style.opacity = "0";
+                }
+                
+                // On affiche le message sans le tag d'émotion
                 chatBox.innerText = text.replace(/\[.*?\]/g, "").trim();
 
             } catch (e) {
-                chatBox.innerText = "Erreur de connexion : " + e.message;
+                chatBox.innerText = "Erreur de connexion.";
             }
         }
     </script>
