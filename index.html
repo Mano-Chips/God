@@ -12,13 +12,15 @@
         }
         
         #eye-container { 
-            flex: 0 0 45vh; display: flex; align-items: center; justify-content: center; 
+            /* On réduit un peu l'espace alloué à l'œil */
+            flex: 0 0 35vh; display: flex; align-items: center; justify-content: center; 
         }
 
         #eye-img { 
-            width: 250px; /* Taille optimale pour tes frames */
+            /* ŒIL RÉTRÉCI ICI */
+            width: 180px; 
             height: auto;
-            image-rendering: pixelated; /* Garde le côté net si c'est du pixel art */
+            image-rendering: pixelated;
         }
 
         #chat-wrapper {
@@ -29,23 +31,33 @@
 
         #chat-box { 
             height: 100%; padding: 0 40px; text-align: center; 
-            font-style: italic; font-size: 1.2em; overflow-y: auto; 
+            font-style: italic; font-size: 1.1em; overflow-y: auto; 
             display: flex; align-items: center; justify-content: center;
             scrollbar-width: none; white-space: pre-wrap;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         #input-area { 
-            padding: 20px; background: #000; border-top: 1px solid #111; 
-            display: flex; gap: 10px; opacity: 0; transition: opacity 1s;
+            padding: 15px; /* Réduit pour remonter la barre */
+            background: #000; 
+            border-top: 1px solid #111; 
+            display: flex; 
+            gap: 10px; 
+            opacity: 0; 
+            transition: opacity 1s;
+            /* On s'assure qu'il n'y a pas de marge qui pousse vers le bas */
+            margin-bottom: 0; 
         }
         
         input { 
             flex: 1; background: #0a0a0a; border: 1px solid #222; color: white; 
-            padding: 12px 20px; border-radius: 25px; outline: none; font-size: 16px;
+            padding: 10px 18px; border-radius: 25px; outline: none; font-size: 16px;
         }
 
-        button { background: #fff; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-weight: bold; }
+        button { 
+            background: #fff; border: none; border-radius: 50%; 
+            width: 40px; height: 40px; cursor: pointer; 
+        }
     </style>
 </head>
 <body onload="init()">
