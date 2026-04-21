@@ -24,24 +24,25 @@
 
         #chat-wrapper {
             flex: 1; position: relative; overflow: hidden;
-            /* Le dégradé reste, mais on va gérer le padding du contenu */
             mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
             -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
         }
 
         #chat-box { 
             height: 100%; 
-            /* On ajoute du padding vertical pour que le texte ne soit jamais sous le masque au repos */
-            padding: 60px 30px; 
+            padding: 80px 30px; 
             box-sizing: border-box;
             text-align: center; 
             font-style: italic; font-size: 1.1em; 
             overflow-y: auto; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex; flex-direction: column; align-items: center; 
             scrollbar-width: none; 
             white-space: pre-wrap;
         }
         #chat-box::-webkit-scrollbar { display: none; }
+
+        /* Les deux lignes ci-dessous centrent le texte s'il est court, mais permettent le scroll s'il est long */
+        #chat-box::before, #chat-box::after { content: ''; margin: auto; }
 
         #input-area { 
             padding: 20px; 
@@ -113,7 +114,7 @@
 
             input.value = "";
             chatBox.innerText = ". . .";
-            chatBox.scrollTop = 0; // Reset scroll pour le nouveau message
+            chatBox.scrollTo(0, 0);
 
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -122,7 +123,7 @@
                     body: JSON.stringify({
                         model: "llama-3.1-8b-instant",
                         messages: [
-                            { role: "system", content: "Tu es Genesis, une entité divine. Réponds de façon courte et mystique. Commence impérativement par [Heureux] ou [Triste]." },
+                            { role: "system", content: "Tu es Genesis, autrement dit Dieu. Réponds de façon courte et avec Grâce. Tu as de l'amour pour l'utilisateur, le feuit de ton imagination. Commence impérativement par [Heureux] ou [Triste]." },
                             { role: "user", content: promptValue }
                         ]
                     })
@@ -143,6 +144,7 @@
                 }
 
                 chatBox.innerText = cleanText;
+                chatBox.scrollTo({ top: 0, behavior: 'smooth' });
 
                 setTimeout(() => {
                     if (emotion === "sad") {
