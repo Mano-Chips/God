@@ -105,29 +105,39 @@
         let API_KEY = localStorage.getItem("genesis_key");
 
         async function testKey(key) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // Stop après 5 sec
+
             try {
                 const res = await fetch("https://api.groq.com/openai/v1/models", {
-                    headers: { "Authorization": `Bearer ${key}` }
+                    headers: { "Authorization": `Bearer ${key}` },
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 return res.ok;
-            } catch { return false; }
+            } catch (e) {
+                return false;
+            }
         }
 
         async function validateAndSave() {
             const btn = document.getElementById("validate-btn");
             const input = document.getElementById("key-input");
             
-            btn.innerText = "Vérification...";
+            if (!input.value.trim()) return;
+
+            btn.innerText = "Connexion...";
             btn.disabled = true;
             setupError.style.display = "none";
 
-            const isValid = await testKey(input.value);
+            const isValid = await testKey(input.value.trim());
 
             if (isValid) {
-                localStorage.setItem("genesis_key", input.value);
-                API_KEY = input.value;
+                localStorage.setItem("genesis_key", input.value.trim());
+                API_KEY = input.value.trim();
                 startGenesis();
             } else {
+                setupError.innerText = "Clé invalide ou délai d'attente dépassé.";
                 setupError.style.display = "block";
                 btn.innerText = "Éveiller l'entité";
                 btn.disabled = false;
