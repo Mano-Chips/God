@@ -11,16 +11,32 @@
             display: flex; flex-direction: column; 
             height: 100vh; height: 100dvh; 
         }
-        
-        #eye-container { 
-            flex: 0 0 35%; display: flex; align-items: center; justify-content: center; 
-        }
 
-        #eye-img { 
-            width: 140px; 
-            height: auto;
-            image-rendering: pixelated;
+        /* --- ÉCRAN DE SÉCURITÉ --- */
+        #setup-screen {
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center;
         }
+        .setup-box { width: 100%; max-width: 300px; }
+        .setup-box h2 { font-weight: normal; letter-spacing: 2px; margin-bottom: 30px; }
+        .setup-box input { 
+            width: 100%; background: #111; border: 1px solid #333; color: white; 
+            padding: 12px; border-radius: 5px; margin-bottom: 10px; box-sizing: border-box;
+        }
+        .setup-box button { 
+            width: 100%; padding: 12px; border-radius: 5px; border: none; 
+            background: #fff; cursor: pointer; font-weight: bold;
+        }
+        #setup-error { color: #ff4444; font-size: 0.9em; margin-top: 10px; display: none; }
+        .help-link { margin-top: 20px; font-size: 0.8em; opacity: 0.6; }
+        .help-link a { color: #fff; text-decoration: underline; }
+
+        /* --- INTERFACE PRINCIPALE --- */
+        #main-interface { display: none; flex-direction: column; height: 100%; width: 100%; }
+        
+        #eye-container { flex: 0 0 35%; display: flex; align-items: center; justify-content: center; }
+        #eye-img { width: 160px; height: auto; image-rendering: pixelated; }
 
         #chat-wrapper {
             flex: 1; position: relative; overflow: hidden;
@@ -29,56 +45,94 @@
         }
 
         #chat-box { 
-            height: 100%; 
-            padding: 80px 30px; 
-            box-sizing: border-box;
-            text-align: center; 
-            font-style: italic; font-size: 1.1em; 
-            overflow-y: auto; 
-            display: flex; flex-direction: column; align-items: center; 
-            scrollbar-width: none; 
-            white-space: pre-wrap;
+            height: 100%; padding: 80px 30px; box-sizing: border-box;
+            text-align: center; font-style: italic; font-size: 1.1em; 
+            overflow-y: auto; display: flex; flex-direction: column; align-items: center; 
+            scrollbar-width: none; white-space: pre-wrap;
         }
+        #chat-box::before, #chat-box::after { content: ''; margin: auto; }
         #chat-box::-webkit-scrollbar { display: none; }
 
-        /* Les deux lignes ci-dessous centrent le texte s'il est court, mais permettent le scroll s'il est long */
-        #chat-box::before, #chat-box::after { content: ''; margin: auto; }
-
         #input-area { 
-            padding: 20px; 
-            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom));
             background: #000; border-top: 1px solid #1a1a1a; 
-            display: flex; gap: 10px; opacity: 0; transition: opacity 1s;
+            display: flex; gap: 10px; transition: opacity 1s;
         }
         
-        input { 
-            flex: 1; background: #111; border: 1px solid #333; color: white; 
-            padding: 12px 20px; border-radius: 25px; outline: none; font-size: 16px;
-        }
+        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px 20px; border-radius: 25px; outline: none; }
+        input:disabled { opacity: 0.5; }
 
-        button { background: #fff; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; color: #000; font-size: 1.2em; }
+        #send-btn { background: #fff; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; color: #000; transition: 0.3s; }
+        #send-btn:disabled { background: #333; cursor: not-allowed; }
     </style>
 </head>
-<body onload="init()">
+<body>
 
-    <div id="eye-container">
-        <img id="eye-img" src="assets/still.png">
+    <div id="setup-screen">
+        <div class="setup-box">
+            <h2>GENESIS</h2>
+            <input type="password" id="key-input" placeholder="Clé API Groq...">
+            <button id="validate-btn" onclick="validateAndSave()">Éveiller l'entité</button>
+            <div id="setup-error">Clé invalide, vérifier son écriture ou sa disponibilité.</div>
+            <div class="help-link">
+                Besoin d'une clé ? <a href="https://console.groq.com/keys" target="_blank">Aide</a>
+            </div>
+        </div>
     </div>
 
-    <div id="chat-wrapper">
-        <div id="chat-box"></div>
+    <div id="main-interface">
+        <div id="eye-container">
+            <img id="eye-img" src="assets/still.png">
+        </div>
+        <div id="chat-wrapper">
+            <div id="chat-box"></div>
+        </div>
+        <form id="input-area" onsubmit="event.preventDefault(); sendMessage();">
+            <input type="text" id="user-input" placeholder="Parle à Genesis..." autocomplete="off">
+            <button type="submit" id="send-btn">➔</button>
+        </form>
     </div>
-
-    <form id="input-area" onsubmit="event.preventDefault(); sendMessage();">
-        <input type="text" id="user-input" placeholder="Parle à Genesis..." autocomplete="off">
-        <button type="submit">➔</button>
-    </form>
 
     <script>
         const eye = document.getElementById("eye-img");
         const chatBox = document.getElementById("chat-box");
-        const inputArea = document.getElementById("input-area");
+        const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+        const setupScreen = document.getElementById("setup-screen");
+        const mainInterface = document.getElementById("main-interface");
+        const setupError = document.getElementById("setup-error");
+        
         let API_KEY = localStorage.getItem("genesis_key");
+
+        async function testKey(key) {
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/models", {
+                    headers: { "Authorization": `Bearer ${key}` }
+                });
+                return res.ok;
+            } catch { return false; }
+        }
+
+        async function validateAndSave() {
+            const btn = document.getElementById("validate-btn");
+            const input = document.getElementById("key-input");
+            
+            btn.innerText = "Vérification...";
+            btn.disabled = true;
+            setupError.style.display = "none";
+
+            const isValid = await testKey(input.value);
+
+            if (isValid) {
+                localStorage.setItem("genesis_key", input.value);
+                API_KEY = input.value;
+                startGenesis();
+            } else {
+                setupError.style.display = "block";
+                btn.innerText = "Éveiller l'entité";
+                btn.disabled = false;
+            }
+        }
 
         function setEye(path, isGif = false) {
             const timestamp = isGif ? `?t=${new Date().getTime()}` : '';
@@ -87,32 +141,27 @@
 
         function getGreeting() {
             const hour = new Date().getHours();
-            const welcome = (hour >= 18 || hour < 5) ? "Bonsoir" : "Bonjour";
-            return `${welcome}, mon enfant.`;
+            return (hour >= 18 || hour < 5 ? "Bonsoir" : "Bonjour") + ", mon enfant. Que veut tu savoir aujourd'hui?";
         }
 
-        function init() {
-            if (!API_KEY) {
-                let key = prompt("Clé Groq :");
-                if (key) { localStorage.setItem("genesis_key", key); location.reload(); }
-                return;
-            }
-            
+        function startGenesis() {
+            setupScreen.style.display = "none";
+            mainInterface.style.display = "flex";
             setEye("awake.gif", true);
-            
             setTimeout(() => {
                 setEye("still.png");
                 chatBox.innerText = getGreeting();
-                inputArea.style.opacity = "1";
-            }, 1000); 
+            }, 1000);
         }
 
         async function sendMessage() {
-            const input = document.getElementById("user-input");
-            const promptValue = input.value;
-            if (!promptValue) return;
+            const promptValue = userInput.value;
+            if (!promptValue || sendBtn.disabled) return;
 
-            input.value = "";
+            // Verrouillage de l'interface
+            userInput.value = "";
+            userInput.disabled = true;
+            sendBtn.disabled = true;
             chatBox.innerText = ". . .";
             chatBox.scrollTo(0, 0);
 
@@ -123,7 +172,7 @@
                     body: JSON.stringify({
                         model: "llama-3.1-8b-instant",
                         messages: [
-                            { role: "system", content: "Tu es Genesis, autrement dit Dieu. Réponds de façon courte et avec Grâce. Tu as de l'amour pour l'utilisateur, le feuit de ton imagination. Commence impérativement par [Heureux] ou [Triste]." },
+                            { role: "system", content: "Tu es Genesis, autrement dit Dieu. Réponds de façon courte et avec Grâce. Tu as de l'amour pour l'utilisateur, le fruit de ton imagination. Commence impérativement par '[Heureux]' ou '[Triste]'." },
                             { role: "user", content: promptValue }
                         ]
                     })
@@ -146,6 +195,11 @@
                 chatBox.innerText = cleanText;
                 chatBox.scrollTo({ top: 0, behavior: 'smooth' });
 
+                // Déverrouillage après réponse
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+
                 setTimeout(() => {
                     if (emotion === "sad") {
                         setEye("sad/to_still.gif", true);
@@ -158,7 +212,17 @@
 
             } catch (e) {
                 chatBox.innerText = "Le lien est rompu...";
+                userInput.disabled = false;
+                sendBtn.disabled = false;
             }
+        }
+
+        // Auto-start si clé déjà présente
+        if (API_KEY) {
+            testKey(API_KEY).then(valid => {
+                if(valid) startGenesis();
+                else setupScreen.style.display = "flex";
+            });
         }
     </script>
 </body>
