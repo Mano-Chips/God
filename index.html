@@ -44,7 +44,7 @@
             image-rendering: pixelated;
             transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out, filter 0.4s ease;
             filter: blur(0px);
-            opacity: 0; /* Caché par défaut pour éviter le flash */
+            opacity: 0;
         }
 
         @keyframes breathe {
@@ -63,7 +63,7 @@
         }
         #chat-box { 
             height: 100%; padding: 80px 30px; box-sizing: border-box;
-            text-align: center; font-size: 1.1em;
+            text-align: center; font-size: 1.1em; /* Retrait de l'italique ici */
             overflow-y: auto; display: flex; flex-direction: column; align-items: center; 
             scrollbar-width: none; opacity: 0; transition: opacity 1.5s ease;
         }
@@ -113,31 +113,37 @@
         
         let API_KEY = localStorage.getItem("genesis_key");
         let conversationHistory = [];
-        let emotionTimeout; // Pour gérer proprement les retours au calme
+        
+        // Gestionnaire de Timers pour éviter les bugs d'animation
+        let timers = [];
+        function clearAllTimers() {
+            timers.forEach(t => clearTimeout(t));
+            timers = [];
+        }
 
         function setEye(path, isGif = false) {
-            clearTimeout(emotionTimeout); // On annule tout retour au calme prévu
             eye.classList.add('transitioning');
             
-            setTimeout(() => {
+            const t = setTimeout(() => {
                 const timestamp = isGif ? `?t=${new Date().getTime()}` : '';
                 eye.src = `assets/${path}${timestamp}`;
                 
-                // On attend que l'image commence à charger pour la montrer
                 eye.onload = () => {
                     eye.classList.remove('transitioning');
                     eye.classList.add('visible-eye');
                 };
             }, 250);
+            timers.push(t);
         }
 
         function displayMessage(text) {
             chatBox.style.opacity = 0;
-            setTimeout(() => {
+            const t = setTimeout(() => {
                 chatBox.innerHTML = marked.parse(text);
                 chatBox.style.opacity = 1;
                 chatBox.scrollTo({ top: 0, behavior: 'smooth' });
             }, 300);
+            timers.push(t);
         }
 
         function quickStart() {
@@ -148,19 +154,21 @@
             setupScreen.style.display = "none";
             mainInterface.style.display = "flex";
             
-            // Première apparition de l'œil avec awake
             setEye("awake.gif", true);
-            
-            setTimeout(() => {
+            const t = setTimeout(() => {
                 setEye("still.png");
                 const hour = new Date().getHours();
                 displayMessage((hour >= 18 || hour < 5 ? "Bonsoir" : "Bonjour") + ", mon enfant. Que veux-tu savoir ?");
             }, 1200);
+            timers.push(t);
         }
 
         async function sendMessage() {
             const promptValue = userInput.value;
             if (!promptValue || sendBtn.disabled) return;
+
+            // Stop toutes les animations en cours avant d'en lancer une nouvelle
+            clearAllTimers();
 
             userInput.value = "";
             userInput.disabled = true;
@@ -177,7 +185,7 @@
                     body: JSON.stringify({
                         model: "llama-3.1-8b-instant",
                         messages: [
-                            { role: "system", content: "Tu es Genesis, autrement dit Dieu. Tu réponds de façon courte et avec grâce. Tu as de l'amour pour l'utilisateur. Commence impérativement par 'Heureux' ou 'Triste' entre crochets [] pour faire savoir au système quel émotion affiché." },
+                            { role: "system", content: "Tu es Genesis, autrement dit Dieu. Tu réponds de façon courte et avec grâce. Tu as de l'amour pour l'utilisateur. Commence impérativement par [Heureux] ou [Triste]." },
                             ...conversationHistory
                         ]
                     })
@@ -193,27 +201,25 @@
 
                 if (emotion === "sad") {
                     setEye("sad/to_sad.gif", true);
-                    setTimeout(() => setEye("sad/sad.png"), 1000);
+                    timers.push(setTimeout(() => setEye("sad/sad.png"), 1000));
                 } else if (emotion === "happy") {
                     setEye("happy/to_happy.gif", true);
-                    setTimeout(() => setEye("happy/happy.png"), 1000);
+                    timers.push(setTimeout(() => setEye("happy/happy.png"), 1000));
                 }
 
                 displayMessage(cleanText);
                 userInput.disabled = false;
                 sendBtn.disabled = false;
 
-                // Retour au calme sécurisé
-                emotionTimeout = setTimeout(() => {
-                    const current = eye.src;
-                    if (current.includes("sad.png")) {
-                        setEye("sad/to_still.gif", true);
-                        setTimeout(() => setEye("still.png"), 1000);
-                    } else if (current.includes("happy.png")) {
-                        setEye("happy/to_still.gif", true);
-                        setTimeout(() => setEye("still.png"), 1000);
-                    }
-                }, 8000);
+                // Retour au calme programmé
+                if (emotion !== "neutre") {
+                    const tBack = setTimeout(() => {
+                        const folder = emotion === "sad" ? "sad" : "happy";
+                        setEye(`${folder}/to_still.gif`, true);
+                        timers.push(setTimeout(() => setEye("still.png"), 1000));
+                    }, 8000);
+                    timers.push(tBack);
+                }
 
             } catch (e) {
                 if (e.message === "AUTH_FAILED") {
