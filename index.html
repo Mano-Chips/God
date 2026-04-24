@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Genesis - Divine Interface</title>
+    <title>Genesis</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { 
@@ -36,7 +36,31 @@
         /* --- INTERFACE PRINCIPALE --- */
         #main-interface { display: none; flex-direction: column; height: 100%; width: 100%; }
         #eye-container { flex: 0 0 35%; display: flex; align-items: center; justify-content: center; }
-        #eye-img { width: 140px; height: auto; image-rendering: pixelated; }
+        #eye-img { 
+            width: 175px; 
+            height: auto;
+            image-rendering: pixelated;
+            /* Ajout de la transition de fluidité */
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out, filter 0.4s ease;
+            filter: blur(0px);
+        }
+
+        /* Animation de "respiration" pour rendre l'oeil vivant */
+        @keyframes breathe {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+
+        .living-eye {
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        .transitioning {
+            opacity: 0.5 !important;
+            filter: blur(1px) !important;
+            transform: scale(0.95);
+        }
         #chat-wrapper {
             flex: 1; position: relative; overflow: hidden;
             mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
@@ -96,9 +120,22 @@
 
         function setEye(path, isGif = false) {
             const timestamp = isGif ? `?t=${new Date().getTime()}` : '';
-            eye.src = `assets/${path}${timestamp}`;
+        
+            // On active l'effet de transition
+            eye.classList.add('transitioning');
+        
+            setTimeout(() => {
+                eye.src = `assets/${path}${timestamp}`;
+                eye.classList.remove('transitioning');
+            
+                // On ajoute la respiration si c'est une image fixe
+                if (!isGif) {
+                    eye.classList.add('living-eye');
+                } else {
+                    eye.classList.remove('living-eye');
+                }
+            }, 200); // Petit délai pour laisser le flou s'installer
         }
-
         function displayMessage(text) {
             chatBox.style.opacity = 0;
             setTimeout(() => {
@@ -125,7 +162,7 @@
             setTimeout(() => {
                 setEye("still.png");
                 const hour = new Date().getHours();
-                displayMessage((hour >= 18 || hour < 5 ? "Bonsoir" : "Bonjour") + ", mon enfant.");
+                displayMessage((hour >= 18 || hour < 5 ? "Bonsoir" : "Bonjour") + ", mon enfant. Que veut tu savoir?");
             }, 1000);
         }
 
