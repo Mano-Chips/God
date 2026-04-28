@@ -34,26 +34,32 @@
 
         #main-interface { display: none; flex-direction: column; height: 100%; width: 100%; }
         
+        /* RESPIRATION PURE : Uniquement du scale ici */
         #eye-container { 
             flex: 0 0 35%; display: flex; align-items: center; justify-content: center; 
-            animation: breathe 5s ease-in-out infinite;
+            animation: breathe 6s ease-in-out infinite;
         }
 
+        /* TRANSITION PURE : Uniquement opacité et flou ici */
         #eye-img { 
             width: 180px; height: auto;
             image-rendering: pixelated;
-            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out, filter 0.4s ease;
+            transition: opacity 0.5s ease, filter 0.5s ease;
             filter: blur(0px);
             opacity: 0;
         }
 
         @keyframes breathe {
-            0% { transform: scale(1); opacity: 0.85; }
-            50% { transform: scale(1.04); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.85; }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
-        .transitioning { opacity: 0 !important; filter: blur(3px) !important; transform: scale(0.8); }
+        /* On retire transform: scale de la transition pour stopper le conflit */
+        .transitioning { 
+            opacity: 0 !important; 
+            filter: blur(5px) !important; 
+        }
+        
         .visible-eye { opacity: 1 !important; }
         
         #chat-wrapper {
@@ -63,7 +69,7 @@
         }
         #chat-box { 
             height: 100%; padding: 80px 30px; box-sizing: border-box;
-            text-align: center; font-size: 1.1em; /* Retrait de l'italique ici */
+            text-align: center; font-size: 1.1em;
             overflow-y: auto; display: flex; flex-direction: column; align-items: center; 
             scrollbar-width: none; opacity: 0; transition: opacity 1.5s ease;
         }
@@ -113,9 +119,8 @@
         
         let API_KEY = localStorage.getItem("genesis_key");
         let conversationHistory = [];
-        
-        // Gestionnaire de Timers pour éviter les bugs d'animation
         let timers = [];
+
         function clearAllTimers() {
             timers.forEach(t => clearTimeout(t));
             timers = [];
@@ -132,7 +137,7 @@
                     eye.classList.remove('transitioning');
                     eye.classList.add('visible-eye');
                 };
-            }, 250);
+            }, 300); // Temps du fondu sortant
             timers.push(t);
         }
 
@@ -167,7 +172,6 @@
             const promptValue = userInput.value;
             if (!promptValue || sendBtn.disabled) return;
 
-            // Stop toutes les animations en cours avant d'en lancer une nouvelle
             clearAllTimers();
 
             userInput.value = "";
@@ -211,7 +215,6 @@
                 userInput.disabled = false;
                 sendBtn.disabled = false;
 
-                // Retour au calme programmé
                 if (emotion !== "neutre") {
                     const tBack = setTimeout(() => {
                         const folder = emotion === "sad" ? "sad" : "happy";
